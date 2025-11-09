@@ -1,0 +1,82 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            framework: net9.0-windows10.0.19041.0
+            artifact-name: HelloMaui-Windows
+            artifact-path: bin/Release/net9.0-windows10.0.19041.0/win10-x64/publish
+          
+          - os: macos-latest
+            platform: macos
+            framework: net9.0-maccatalyst
+            artifact-name: HelloMaui-macOS
+            artifact-path: bin/Release/net9.0-maccatalyst/maccatalyst-arm64
+          
+          - os: macos-latest
+            platform: ios
+            framework: net9.0-ios
+            artifact-name: HelloMaui-iOS
+            artifact-path: bin/Release/net9.0-ios/ios-arm64
+          
+          - os: ubuntu-latest
+            platform: android
+            framework: net9.0-android
+            artifact-name: HelloMaui-Android
+            artifact-path: bin/Release/net9.0-android
+
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.platform }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Install MAUI Workload
+        run: dotnet workload install maui
+      
+      - name: Restore dependencies
+        run: dotnet restore HelloMaui.csproj
+      
+      - name: Build ${{ matrix.platform }}
+        run: dotnet build HelloMaui.csproj -c Release -f ${{ matrix.framework }}
+      
+      - name: Publish ${{ matrix.platform }}
+        if: matrix.platform == 'windows' || matrix.platform == 'android'
+        run: dotnet publish HelloMaui.csproj -c Release -f ${{ matrix.framework }}
+      
+      - name: Create Release Package
+        run: |
+          mkdir -p release-package
+          cp -r ${{ matrix.artifact-path }}/* release-package/ || true
+      
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: release-package/
+          retention-days: 30
+      
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-package/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

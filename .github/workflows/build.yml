@@ -1,0 +1,116 @@
+name: .NET MAUI CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    name: Android Build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Install MAUI Workload
+        run: dotnet workload install maui
+      
+      - name: Restore dependencies
+        run: dotnet restore HelloMaui.csproj
+      
+      - name: Build Android
+        run: dotnet build HelloMaui.csproj -c Release -f net9.0-android
+      
+      - name: Upload Android Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: bin/Release/net9.0-android/**/*.apk
+
+  build-ios:
+    runs-on: macos-latest
+    name: iOS Build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Install MAUI Workload
+        run: dotnet workload install maui
+      
+      - name: Restore dependencies
+        run: dotnet restore HelloMaui.csproj
+      
+      - name: Build iOS
+        run: dotnet build HelloMaui.csproj -c Release -f net9.0-ios
+      
+      - name: Upload iOS Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: bin/Release/net9.0-ios/**/*.app
+
+  build-macos:
+    runs-on: macos-latest
+    name: macOS Build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Install MAUI Workload
+        run: dotnet workload install maui
+      
+      - name: Restore dependencies
+        run: dotnet restore HelloMaui.csproj
+      
+      - name: Build macOS
+        run: dotnet build HelloMaui.csproj -c Release -f net9.0-maccatalyst
+      
+      - name: Upload macOS Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: bin/Release/net9.0-maccatalyst/**/*.app
+
+  build-windows:
+    runs-on: windows-latest
+    name: Windows Build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Install MAUI Workload
+        run: dotnet workload install maui
+      
+      - name: Restore dependencies
+        run: dotnet restore HelloMaui.csproj
+      
+      - name: Build Windows
+        run: dotnet build HelloMaui.csproj -c Release -f net9.0-windows10.0.19041.0
+      
+      - name: Publish Windows MSIX
+        run: dotnet publish HelloMaui.csproj -c Release -f net9.0-windows10.0.19041.0 -p:RuntimeIdentifierOverride=win10-x64
+      
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: bin/Release/net9.0-windows10.0.19041.0/win10-x64/publish/**/*
