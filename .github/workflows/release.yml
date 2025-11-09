@@ -47,12 +47,28 @@ jobs:
         with:
           xcode-version: latest-stable
       
+      - name: Setup Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+      
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
       
-      - name: Install MAUI Workload
+      - name: Install MAUI Workload (macOS/iOS)
+        if: matrix.platform == 'macos' || matrix.platform == 'ios'
+        run: dotnet workload install maui
+      
+      - name: Install MAUI Workload (Android)
+        if: matrix.platform == 'android'
+        run: dotnet workload install maui-android
+      
+      - name: Install MAUI Workload (Windows)
+        if: matrix.platform == 'windows'
         run: dotnet workload install maui
       
       - name: Restore dependencies
